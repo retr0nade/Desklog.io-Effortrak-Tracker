@@ -120,16 +120,6 @@ EFFORTRAK_API_KEY=abc123xyz456      # Required - Your organization's API key
 API_BASE_URL=https://tracker2.keylines.net  # Required - Base API endpoint
 ```
 
-### Modify `config.py`
-
-```python
-SCREENSHOT_INTERVAL = 5  # Seconds between screenshots (default: 5 seconds)
-IDLE_THRESHOLD = 10       # Seconds of inactivity before marked idle (default: 10 seconds)
-IMAGE_QUALITY = 50         # JPEG quality (1–100)
-```
-
----
-
 ## 🚀 Usage
 
 ### Start the App
