@@ -916,8 +916,8 @@ class ScreenshotApp(QWidget):
         self.screenshot_active = False
         self.thread = None
         self.idle_seconds = 0
-        self.screenshot_interval = 10 # 5 minutes
-        self.idle_threshold = 5  # 180 seconds
+        self.screenshot_interval = 300 # 5 minutes
+        self.idle_threshold = 180  # 180 seconds
         self.was_idle = False
         self.last_input_time = time.time()
         self.idle_timer = QTimer()
