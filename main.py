@@ -9,7 +9,7 @@ import pygetwindow as gw
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, 
-    QLineEdit, QMessageBox, QCheckBox, QHBoxLayout, QFormLayout
+    QLineEdit, QMessageBox, QCheckBox, QHBoxLayout, QFormLayout, QToolButton
 )
 from PyQt5.QtGui import QFont, QMovie
 from PyQt5.QtCore import Qt, QTimer
@@ -464,11 +464,37 @@ class LoginWindow(QWidget):
         self.email_input = QLineEdit()
         self.email_input.setPlaceholderText("Enter your email")
         form_layout.addRow("Email", self.email_input)
+        
+        password_container = QWidget()
+        password_layout = QHBoxLayout(password_container)
+        password_layout.setContentsMargins(0, 0, 0, 0)
+        password_layout.setSpacing(0)
 
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Enter your password")
         self.password_input.setEchoMode(QLineEdit.Password)
-        form_layout.addRow("Password", self.password_input)
+        
+        # Eye icon button
+        self.toggle_password_btn = QToolButton()
+        self.toggle_password_btn.setIcon(QIcon(resource_path('eye-closed.png')))  # Use your eye icon
+        self.toggle_password_btn.setStyleSheet("""
+            QToolButton {
+                border: none;
+                padding: 0 8px;
+                background: transparent;
+            }
+            QToolButton:hover {
+                background: rgba(0,0,0,0.1);
+                border-radius: 4px;
+            }
+        """)
+        self.toggle_password_btn.setCursor(Qt.PointingHandCursor)
+        self.toggle_password_btn.clicked.connect(self.toggle_password_visibility)
+        
+        password_layout.addWidget(self.password_input)
+        password_layout.addWidget(self.toggle_password_btn)
+        
+        form_layout.addRow("Password", password_container)
         
         '''# Add remember me checkbox
         self.remember_check = QCheckBox("Remember me")
@@ -517,6 +543,14 @@ class LoginWindow(QWidget):
     '''def on_remember_changed(self, state):
         # Enable/disable auto-login checkbox based on remember me state
         self.auto_login_check.setEnabled(state == Qt.Checked)'''
+        
+    def toggle_password_visibility(self):
+        if self.password_input.echoMode() == QLineEdit.Password:
+            self.password_input.setEchoMode(QLineEdit.Normal)
+            self.toggle_password_btn.setIcon(QIcon(resource_path('eye-open.png')))  # Open eye icon
+        else:
+            self.password_input.setEchoMode(QLineEdit.Password)
+            self.toggle_password_btn.setIcon(QIcon(resource_path('eye-closed.png')))  # Closed eye icon
         
         
     def handle_login(self):
@@ -777,7 +811,7 @@ class OTPLoginWindow(QWidget):
         self.login_window.show()
 
 
-def send_screenshot(user_id, org_id, file_path, idle_status=0):
+def send_screenshot(user_id, org_id, file_path=None, idle_status=0):
     if not API_BASE or not ACCESS_TOKEN:
         logger.error("API base or token not set for screenshot upload")
         print("[ERROR] API base or token not set")
@@ -786,10 +820,6 @@ def send_screenshot(user_id, org_id, file_path, idle_status=0):
     url = API_BASE.replace("/api/", "/api/screenshot/upload")
     logger.debug(f"Uploading screenshot to: {url}")
     print(f"[DEBUG] Uploading to: {url}")
-
-    mime_type, _ = mimetypes.guess_type(file_path)
-    if not mime_type:
-        mime_type = "image/jpeg"
 
     try:
         # Get active window title (app name)
@@ -806,7 +836,8 @@ def send_screenshot(user_id, org_id, file_path, idle_status=0):
         "org_id": str(org_id),
         "app_name": app_name[:100],  # Truncate if too long
         "app_url": "",
-        "idle_status": str(idle_status)
+        "idle_status": str(idle_status),
+        "is_idle_notification": "true" if idle_status else "false"
     }
 
     print(f"[DEBUG] Payload data: {data}")
@@ -814,22 +845,33 @@ def send_screenshot(user_id, org_id, file_path, idle_status=0):
     
     headers = {
         "Key": os.getenv("API_KEY"),
-        "source": DEVICE_TYPE or "DESKTOP",  # Use actual device type or fallback
+        "source": DEVICE_TYPE or "DESKTOP",
         "Authorization": ACCESS_TOKEN
     }
 
     try:
-        with open(file_path, 'rb') as f:
-            files = {
-                'image': (os.path.basename(file_path), f, mime_type)
-            }
-            response = requests.post(url, headers=headers, data=data, files=files)
-            logger.info(f"Screenshot uploaded - Status: {response.status_code}, Response: {response.text}")
-            print("[API] Screenshot upload:", response.status_code, response.text)
+        if idle_status:
+            # For idle status, we just send the data without any image
+            response = requests.post(url, headers=headers, data=data)
+        else:
+            # For active screenshots, send the image as before
+            mime_type, _ = mimetypes.guess_type(file_path)
+            if not mime_type:
+                mime_type = "image/jpeg"
+                
+            with open(file_path, 'rb') as f:
+                files = {
+                    'image': (os.path.basename(file_path), f, mime_type)
+                }
+                response = requests.post(url, headers=headers, data=data, files=files)
+        
+        logger.info(f"Upload response - Status: {response.status_code}, Response: {response.text}")
+        print("[API] Upload response:", response.status_code, response.text)
     except Exception as e:
         print("[ERROR] Upload failed:", str(e))
+        logger.error(f"Upload error: {str(e)}")
 
-def create_idle_image():
+'''def create_idle_image():
     """Create a static idle image if it doesn't exist"""
     idle_path = os.path.join("screenshots", "idle.jpg")
     if not os.path.exists(idle_path):
@@ -842,7 +884,7 @@ def create_idle_image():
             font = ImageFont.load_default()
         draw.text((400, 300), "USER IDLE", fill="white", font=font)
         img.save(idle_path, "JPEG", quality=50)
-    return idle_path
+    return idle_path'''
 
 class IdleMonitor:
     def __init__(self, parent):
@@ -916,8 +958,8 @@ class ScreenshotApp(QWidget):
         self.screenshot_active = False
         self.thread = None
         self.idle_seconds = 0
-        self.screenshot_interval = 10 # 5 minutes
-        self.idle_threshold = 5  # 180 seconds
+        self.screenshot_interval = 300 # 5 minutes
+        self.idle_threshold = 180  # 180 seconds
         self.was_idle = False
         self.last_input_time = time.time()
         self.idle_timer = QTimer()
@@ -1236,7 +1278,6 @@ class ScreenshotApp(QWidget):
     def screenshot_loop(self):
         os.makedirs("screenshots", exist_ok=True)
         target_size = (1280, 720)
-        idle_image = create_idle_image()
         last_upload_time = 0
         idle_image_sent = False
 
@@ -1251,7 +1292,7 @@ class ScreenshotApp(QWidget):
                 if is_idle:
                     if not idle_image_sent or (current_time - last_upload_time) >= self.screenshot_interval:  # 5 minutes
                         # Send idle image at reduced frequency
-                        send_screenshot(USER_ID, ORG_ID, idle_image, idle_status=1)
+                        send_screenshot(USER_ID, ORG_ID, idle_status=1)
                         idle_image_sent = True
                         last_upload_time = current_time
                 else:
