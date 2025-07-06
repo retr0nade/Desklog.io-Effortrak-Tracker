@@ -3,6 +3,7 @@
 
 
 EfforTrak is an employee productivity monitoring application developed to capture and securely upload screenshots, track idle/active time, and operate discreetly in the system tray.
+Additionally it upload the screenshots to the specified URL.
 
 ---
 
@@ -205,15 +206,14 @@ logs/effortrak.log
 
 ```bash
 This software is proprietary to:
-→ Keyline DigiTech
+→ Keylines DigiTech
 
 Unauthorized use, modification, or redistribution is prohibited.
 
 Contact IT Support:
-📧 it-support@keylines.net
-📞 Ext: 5555
+📧 support@keylines.net
 
-Version       : 1.2.3
-Last Updated  : 2025-06-17
+Version       : 1.0.1
+Last Updated  : 05-07-2025
 ```
 
