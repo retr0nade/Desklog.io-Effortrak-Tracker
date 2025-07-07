@@ -3,6 +3,7 @@
 
 
 EfforTrak is an employee productivity monitoring application developed to capture and securely upload screenshots, track idle/active time, and operate discreetly in the system tray.
+Additionally it upload the screenshots to the specified URL.
 
 ---
 
@@ -120,16 +121,6 @@ EFFORTRAK_API_KEY=abc123xyz456      # Required - Your organization's API key
 API_BASE_URL=https://tracker2.keylines.net  # Required - Base API endpoint
 ```
 
-### Modify `config.py`
-
-```python
-SCREENSHOT_INTERVAL = 300  # Seconds between screenshots (default: 5 minutes)
-IDLE_THRESHOLD = 600       # Seconds of inactivity before marked idle (default: 10 minutes)
-IMAGE_QUALITY = 50         # JPEG quality (1–100)
-```
-
----
-
 ## 🚀 Usage
 
 ### Start the App
@@ -215,15 +206,14 @@ logs/effortrak.log
 
 ```bash
 This software is proprietary to:
-→ Keyline DigiTech
+→ Keylines DigiTech
 
 Unauthorized use, modification, or redistribution is prohibited.
 
 Contact IT Support:
-📧 it-support@keylines.net
-📞 Ext: 5555
+📧 support@keylines.net
 
-Version       : 1.2.3
-Last Updated  : 2025-06-17
+Version       : 1.0.1
+Last Updated  : 05-07-2025
 ```
 
