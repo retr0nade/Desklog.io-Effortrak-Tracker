@@ -1,7 +1,9 @@
-Pillow>=9.0.0
 PyQt5==5.15.9
 pyautogui==0.9.54
 pygetwindow==0.0.9
 pynput==1.7.6
 requests==2.31.0
+python-dotenv==1.0.0
+pywin32==306
+cryptography==42.0.5
 pyinstaller

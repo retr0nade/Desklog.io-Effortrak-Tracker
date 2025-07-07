@@ -22,6 +22,8 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtCore import QRunnable, pyqtSignal, QObject, QThreadPool
 from PyQt5.QtCore import QThread, pyqtSignal, QObject
+from PyQt5.QtNetwork import QLocalServer, QLocalSocket
+
 
 import json
 from PyQt5.QtCore import QStandardPaths
@@ -120,7 +122,7 @@ def resource_path(relative_path):
 
 global HEADERS
 HEADERS = {
-    "Key": os.getenv("API_KEY"),
+    "Key": "4e1c3ee6861ac425437fa8b662651cde",
     "source": DEVICE_TYPE or "WINDOWS",
     "Content-Type": "application/json"
 }
@@ -322,6 +324,12 @@ class APIUrlWindow(QWidget):
         self.close()
         self.login_window = LoginWindow(self.config)
         self.login_window.show()  
+        
+    def bring_to_front(self):
+        self.show()
+        self.setWindowState(self.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+        self.activateWindow()
+
         
 def test_api_connection():
     """Test if the API endpoint is reachable"""
@@ -641,6 +649,11 @@ class LoginWindow(QWidget):
             self.login_thread.quit()
             self.login_thread.wait(1000)  # Wait up to 1 second
         event.accept()
+    
+    def bring_to_front(self):
+        self.show()
+        self.setWindowState(self.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+        self.activateWindow()
 
 def login_user(email, password):
     global USER_NAME, LOGIN_TIME, ACCESS_TOKEN
@@ -844,7 +857,7 @@ def send_screenshot(user_id, org_id, file_path=None, idle_status=0):
     logger.debug(f"Screenshot payload data: {data}")
     
     headers = {
-        "Key": os.getenv("API_KEY"),
+        "Key": "4e1c3ee6861ac425437fa8b662651cde",
         "source": DEVICE_TYPE or "DESKTOP",
         "Authorization": ACCESS_TOKEN
     }
@@ -1108,7 +1121,7 @@ class ScreenshotApp(QWidget):
     def create_tray_icon(self):
         # Create the tray icon
         self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(QIcon("icon.ico"))  # Make sure you have an icon file
+        self.tray_icon.setIcon(QIcon(resource_path("icon.ico"))) # Make sure you have an icon file
         
         # Create a context menu
         tray_menu = QMenu()
@@ -1341,6 +1354,12 @@ class ScreenshotApp(QWidget):
         except Exception as e:
             print(f"Error in reset_idle_timer: {e}")
             
+    def bring_to_front(self):
+        self.show()
+        self.setWindowState(self.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+        self.activateWindow()
+
+            
 class ConfigManager:
     def __init__(self):
         self.lock = threading.Lock()
@@ -1452,6 +1471,50 @@ class ConfigManager:
             if autosave:
                 self.save_config()
 
+#code to check if multiple instances are running
+def is_another_instance_running(app_id="effortrak_instance"):
+    """Check if another instance of the app is running."""
+    socket = QLocalSocket()
+    socket.connectToServer(app_id)
+    is_running = socket.waitForConnected(100)
+    socket.close()
+    return is_running
+
+def create_instance_server(app_id="effortrak_instance", on_message=None):
+    server = QLocalServer()
+    if not server.listen(app_id):
+        QLocalServer.removeServer(app_id)
+        if not server.listen(app_id):
+            print("Failed to listen on server.")
+            return None
+
+    if on_message:
+        def handle_connection():
+            socket = server.nextPendingConnection()
+            if socket and socket.waitForReadyRead(100):
+                try:
+                    message = bytes(socket.readAll()).decode()
+                    on_message(message)
+                except Exception as e:
+                    print(f"[Tray] Failed to read incoming message: {e}")
+            socket.disconnectFromServer()
+
+        server.newConnection.connect(handle_connection)
+
+    return server
+
+# === Handle incoming messages from second instance ===
+def on_instance_message(message):
+    if message == "show":
+        try:
+            for widget in QApplication.topLevelWidgets():
+                if hasattr(widget, 'bring_to_front'):
+                    widget.bring_to_front()
+                    break
+        except Exception as e:
+            print(f"Error bringing to front: {e}")
+
+
 
 
 if __name__ == "__main__":
@@ -1459,34 +1522,53 @@ if __name__ == "__main__":
         logger.info("Restarting as admin")
         run_as_admin()
         sys.exit(0)
-        
+
     logger.info("Application starting")
+
+    if is_another_instance_running():
+        try:
+            socket = QLocalSocket()
+            socket.connectToServer("effortrak_instance")
+            if socket.waitForConnected(100):
+                socket.write(b"show")
+                socket.flush()
+                socket.waitForBytesWritten(100)
+                socket.disconnectFromServer()
+        except Exception as e:
+            print(f"Could not send signal to main instance: {e}")
+        sys.exit(0)
+
+
+    single_instance_server = create_instance_server("effortrak_instance", on_instance_message)
+    if not single_instance_server:
+        print("Failed to start instance server.")
+        sys.exit(0)
+
+
     QThreadPool.globalInstance().setMaxThreadCount(5)
     reset_global_variables()
     app = QApplication(sys.argv)
-    
+
     app.setApplicationName("Effortrak")
     app.setApplicationDisplayName("Effortrak")
     app.setOrganizationName("Keyline DigiTech")
-    
+
     config_manager = ConfigManager()
     logger.info("Configuration loaded")
-    
-    # Check if we have all required info for auto-login
+
     saved_url = config_manager.get("api_url")
     auto_login = config_manager.get("auto_login", False)
     remember_creds = config_manager.get("remember_credentials", False)
     has_credentials = config_manager.get("saved_email") and config_manager.get("saved_password")
-    
+
     if saved_url and auto_login and remember_creds and has_credentials:
         logger.info("Attempting auto-login")
         API_BASE = saved_url.rstrip('/') + "/api/"
         login_window = LoginWindow(config_manager)
         login_window.show()
     else:
-        # Either no saved URL or not set to auto-login - show URL window
         logger.info("Showing API URL window (no auto-login)")
         url_window = APIUrlWindow(config_manager)
         url_window.show()
-    
+
     sys.exit(app.exec_())
