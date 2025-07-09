@@ -67,7 +67,7 @@ Minimum:
   Disk Space  : 100MB
 
 Recommended:
-  OS          : Windows 11, macOS 12+
+  OS          : Windows 11
   Python      : 3.10+
   RAM         : 4GB
   Disk Space  : 200MB
