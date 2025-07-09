@@ -61,7 +61,7 @@ EfforTrak is designed to:
 
 ```bash
 Minimum:
-  OS          : Windows 10/11, macOS 10.15+, Ubuntu 20.04+
+  OS          : Windows 10/11 (not available for macOS and linus yet)
   Python      : 3.8+
   RAM         : 2GB
   Disk Space  : 100MB
