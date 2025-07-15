@@ -1,5 +1,5 @@
 
-# EfforTrak Screenshot Monitor
+# EfforTrak Screenshot Monitor (Desklog.io)
 
 
 EfforTrak is an employee productivity monitoring application developed to capture and securely upload screenshots, track idle/active time, and operate discreetly in the system tray.
