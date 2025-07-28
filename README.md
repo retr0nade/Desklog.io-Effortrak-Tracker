@@ -117,7 +117,7 @@ API_BASE_URL=https://tracker2.keylines.net
 ### Environment Variables
 
 ```bash
-EFFORTRAK_API_KEY=abc123xyz456      # Required - Your organization's API key
+API_KEY=abc123xyz456      # Required - Your organization's API key
 API_BASE_URL=https://tracker2.keylines.net  # Required - Base API endpoint
 ```
 
