@@ -106,7 +106,7 @@ pip install -r requirements.txt
 
 ```ini
 # .env (in project root)
-EFFORTRAK_API_KEY=your_api_key_here
+API_KEY=your_api_key_here
 API_BASE_URL=https://tracker2.keylines.net
 ```
 
