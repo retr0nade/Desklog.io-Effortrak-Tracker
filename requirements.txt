@@ -6,4 +6,3 @@ requests==2.31.0
 python-dotenv==1.0.0
 pywin32==306
 cryptography==42.0.5
-pyinstaller
