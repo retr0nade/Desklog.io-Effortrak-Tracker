@@ -52,7 +52,7 @@ EfforTrak is designed to:
     └─ Right-click menu with quick actions
 
 ✔ Multi-Platform Support
-    └─ Compatible with Windows, macOS, and Linux
+    └─ Compatible with Windows and macOS
 ```
 
 ---
